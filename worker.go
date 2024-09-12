@@ -173,7 +173,9 @@ func (w *Worker) work() {
 
 				// fmt.Println("on success:")
 				w.state.Set("status", WorkerStatusSuccess)
-				w.OnSuccess(w)
+				if w.OnSuccess != nil {
+					w.OnSuccess(w)
+				}
 			}(w)
 
 			// wait for the job to finish

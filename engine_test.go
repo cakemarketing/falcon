@@ -26,6 +26,60 @@ func TestState(t *testing.T) {
 	log.Println(state.String())
 }
 
+func TestEngineMaxWorkers(t *testing.T) {
+	e := NewEngine().WithMaxWorkers(2).WithConfig(&Config{
+		Job: func(w *Worker) error {
+			message, _ := w.state.Get("message")
+			fmt.Printf("%s: worker %d starting working on %s\n", time.Now(), w.GetId(), message)
+			time.Sleep(time.Second * 3)
+			fmt.Printf("%s: worker %d done worging on %s\n", time.Now(), w.GetId(), message)
+			return nil
+		},
+		OnError: func(e error, w *Worker) {
+			fmt.Printf("%s: OnError worker %d: %s\n", time.Now(), w.GetId(), e)
+		},
+	}).Start()
+	defer e.Close()
+
+	for i := 1; i < 6; i++ {
+		fmt.Println(time.Now(), "Queueing", i)
+		e.Queue(i)
+		fmt.Println(time.Now(), "Queued", i)
+		for w := range e.GetWorkers() {
+			fmt.Printf("%s: worker %d: %s\n", time.Now(), w.GetId(), w.state)
+		}
+	}
+}
+
+func TestWaitingWorkersCount(t *testing.T) {
+	e := NewEngine().WithMaxWorkers(5).WithConfig(&Config{
+		Job: func(w *Worker) error {
+			delay := time.Millisecond * time.Duration(rand.Float32()*100)
+			time.Sleep(delay)
+			return nil
+		},
+		OnSuccess: func(w *Worker) {
+			fmt.Println("worker", w.GetId(), "done")
+		},
+	}).Start()
+
+	go func() {
+		time.Sleep(20 * time.Second)
+		e.cancel()
+	}()
+	
+	start := time.Now()
+	for time.Since(start) < time.Second {
+		availWorkers := e.WaitingWorkersCount()
+		fmt.Println(time.Now(), "Available workers:", availWorkers)
+		if availWorkers > 0 {
+			e.Queue(time.Now().UnixMilli())
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+}
+
 func TestEngine(t *testing.T) {
 	engine := NewEngine().WithMaxWorkers(5)
 	defer engine.Close()

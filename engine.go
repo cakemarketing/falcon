@@ -121,6 +121,18 @@ func (e *Engine) GetWorkers() <-chan *Worker {
 	return out
 }
 
+// Assuming a single dispatcher per process, get the number of free/waiting workers
+// Example usage: before receiving messages from a SQS queue, only retrieve as many as workers available, to prevent messages waiting for workers to free up.
+func (e *Engine) WaitingWorkersCount() int {
+	counter := 0
+	for worker := range e.GetWorkers() {
+		if worker.GetStatus() == WorkerStatusWaiting {
+			counter++
+		}
+	}
+	return counter
+}
+
 func (e *Engine) GetProcessedCount() int {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
