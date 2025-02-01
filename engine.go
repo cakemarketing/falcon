@@ -92,6 +92,10 @@ func (e *Engine) Start() *Engine {
 	return e
 }
 
+func (e *Engine) Wait() {
+	<-e.ctx.Done()
+}
+
 func (e *Engine) Close() error {
 	e.Receive(shutdown{})
 	return nil

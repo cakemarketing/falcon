@@ -87,6 +87,10 @@ func (w *Worker) GetContext() context.Context {
 	return w.ctx
 }
 
+func (w *Worker) SetContext(ctx context.Context) {
+	w.ctx = ctx
+}
+
 func (w *Worker) SetState(state string, v any) {
 	w.state.Set(state, v)
 }
@@ -152,6 +156,7 @@ func (w *Worker) work() {
 
 				if w.Config == nil {
 					// fmt.Println("no configured jobs")
+					w.OnError(fmt.Errorf("config is nil"), w)
 					return
 				}
 

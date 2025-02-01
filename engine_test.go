@@ -67,7 +67,7 @@ func TestWaitingWorkersCount(t *testing.T) {
 		time.Sleep(20 * time.Second)
 		e.cancel()
 	}()
-	
+
 	start := time.Now()
 	for time.Since(start) < time.Second {
 		availWorkers := e.WaitingWorkersCount()
@@ -163,11 +163,9 @@ func TestEngineConfigError(t *testing.T) {
 
 	go func() {
 		ticker := time.NewTicker(time.Second)
-		for {
-			select {
-			case <-ticker.C:
-				log.Println(engine)
-			}
+		defer ticker.Stop()
+		for range ticker.C {
+			log.Println(engine)
 		}
 	}()
 
